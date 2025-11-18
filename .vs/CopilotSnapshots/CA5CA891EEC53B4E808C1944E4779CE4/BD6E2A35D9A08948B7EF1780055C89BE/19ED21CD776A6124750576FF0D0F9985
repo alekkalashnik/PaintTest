@@ -1,0 +1,230 @@
+﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
+using NUnit.Framework;
+using PaintTest.Core;
+using PaintTest.Core.Exceptions;
+using PaintTest.Pages;
+using Reqnroll;
+using Reqnroll.BoDi;
+using static FlaUI.Core.FrameworkAutomationElementBase;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+
+namespace PaintTest.Features.StepDefinitions
+{
+    [Binding]
+    public class PaintApplicationSteps
+    {
+        private readonly IObjectContainer _objectContainer;
+        private readonly ApplicationManager _appManager;
+        private PaintMainPage? _paintMainPage;
+
+        public PaintApplicationSteps(IObjectContainer objectContainer)
+        {
+            _objectContainer = objectContainer;
+            _appManager = _objectContainer.Resolve<ApplicationManager>();
+        }
+
+        [Given(@"I have Paint application available")]
+        public void GivenIHavePaintApplicationAvailable()
+        {
+            // Paint is available by default on Windows - no action needed
+            Console.WriteLine("Paint is available on Windows by default");
+        }
+
+        [Given(@"I have launched Paint application")]
+        [When(@"I launch the Paint application")]
+        public void WhenILaunchThePaintApplication()
+        {
+            _paintMainPage = new PaintMainPage(_appManager);
+            _paintMainPage.WaitForPageLoad();
+        }
+
+      
+        
+        [Given(@"I have launched Paint application with default settings")]
+        public void GivenIHaveLaunchedPaintApplicationWithDefaultSettings()
+        {
+            // Launch Paint
+            WhenILaunchThePaintApplication();
+
+            // Apply default settings: maximize window
+            WhenIChangeTheWindowStateTo("maximized");
+
+            // Set the default canvas size
+            WhenIClickOnMenuButton("File");
+            WhenIClickOnMenuButton("Image properties");
+
+            Console.WriteLine("Paint launched with default settings (maximized)");
+        }
+
+
+
+
+        [Then(@"Paint application should open successfully")]
+        public void ThenPaintApplicationShouldOpenSuccessfully()
+        {
+            Assert.That(_paintMainPage!.IsApplicationOpen(), Is.True, 
+                "Paint application should be open");
+        }
+
+        [Then(@"the window title should contain ""(.*)""")]
+        public void ThenTheWindowTitleShouldContain(string expectedText)
+        {
+            Assert.That(_paintMainPage!.WindowTitle, Does.Contain(expectedText), 
+                $"Window title should contain '{expectedText}'");
+            
+            Console.WriteLine($"Window title: {_paintMainPage.WindowTitle}");
+        }
+
+        [Then(@"the Paint canvas should be visible")]
+        public void ThenThePaintCanvasShouldBeVisible()
+        {
+            Assert.That(_paintMainPage!.IsCanvasVisible(), Is.True, 
+                "Paint canvas should be visible");
+        }
+
+        [When(@"I maximize the Paint window")]
+        public void WhenIMaximizeThePaintWindow()
+        {
+            _paintMainPage!.MaximizeWindow();
+            Thread.Sleep(500); // Wait for animation
+        }
+        [Given(@"I change the window state to ""(.*)""")]
+        [When(@"I change the window state to ""(.*)""")]
+        public void WhenIChangeTheWindowStateTo(string state)
+        {
+            switch (state.ToLower())
+            {
+                case "maximized":
+                    _paintMainPage!.MaximizeWindow();
+                    break;
+                case "minimized":
+                    _paintMainPage!.MinimizeWindow();
+                    break;
+                case "normal":
+                    // Restore to normal if not already
+                    var currentState = _paintMainPage!.GetWindowState();
+                    if (currentState != WindowVisualState.Normal)
+                    {
+                        var window = _paintMainPage.MainWindow;
+                        if (window.Patterns.Window.IsSupported)
+                        {
+                            window.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Normal);
+                        }
+                    }
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported window state: {state}");
+            }
+            
+            Thread.Sleep(500); // Wait for animation
+        }
+
+        [Then(@"the Paint window should be in maximized state")]
+        public void ThenThePaintWindowShouldBeInMaximizedState()
+        {
+            var currentState = _paintMainPage!.GetWindowState();
+            Assert.That(currentState, Is.EqualTo(WindowVisualState.Maximized), 
+                "Window should be maximized");
+            
+            Console.WriteLine($"Window state: {currentState}");
+        }
+
+        [Then(@"the Paint window should be in ""(.*)"" state")]
+        public void ThenThePaintWindowShouldBeInState(string expectedState)
+        {
+            var currentState = _paintMainPage!.GetWindowState();
+            var expectedVisualState = Enum.Parse<WindowVisualState>(expectedState, true);
+            
+            Assert.That(currentState, Is.EqualTo(expectedVisualState), 
+                $"Window should be in {expectedState} state");
+            
+            Console.WriteLine($"Window state: {currentState}");
+        }
+
+        [When(@"I draw a line from (.*),(.*) to (.*),(.*)")]
+        public void WhenIDrawALineFrom(int x1, int y1, int x2, int y2)
+        {
+            var canvas = _paintMainPage!.MainWindow.FindFirstDescendant(cf => 
+                cf.ByControlType(ControlType.Pane));
+            
+            if (canvas != null)
+            {
+                var canvasBounds = canvas.BoundingRectangle;
+                var startX = canvasBounds.Left + x1;
+                var startY = canvasBounds.Top + y1;
+                var endX = canvasBounds.Left + x2;
+                var endY = canvasBounds.Top + y2;
+                
+                // Perform drag operation manually
+                Mouse.MoveTo(startX, startY);
+                Mouse.Down(MouseButton.Left);
+                Thread.Sleep(50);
+                Mouse.MoveTo(endX, endY);
+                Mouse.Up(MouseButton.Left);
+                Thread.Sleep(200);
+            }
+        }
+
+        [When(@"I click on ""(.*)"" button")]
+        public void WhenIClickOnButton(string buttonName)
+        {
+            var button = _paintMainPage!.MainWindow.FindFirstDescendant(cf => 
+                cf.ByName(buttonName).And(cf.ByControlType(ControlType.Button)));
+            
+            if (button != null)
+            {
+                button.Click();
+                Thread.Sleep(300);
+            }
+            else
+            {
+                throw new ElementNotFoundException($"Button '{buttonName}' not found", buttonName);
+            }
+        }
+
+
+
+        [When(@"I click on ""(.*)"" menu button")]
+        public void WhenIClickOnMenuButton(string buttonName)
+        {
+            var button = _paintMainPage!.MainWindow.FindFirstDescendant(cf =>
+                cf.ByName(buttonName))?.AsMenuItem();
+
+            if (button != null)
+            {
+                button.Click();
+                Thread.Sleep(300);
+            }
+            else
+            {
+                throw new ElementNotFoundException($"Button '{buttonName}' not found", buttonName);
+            }
+        }
+
+
+
+
+
+        [When(@"I select ""(.*)"" tool")]
+        public void WhenISelectTool(string toolName)
+        {
+            // Find tool button by name (Pencil, Brush, Eraser, etc.)
+            var toolButton = _paintMainPage!.MainWindow.FindFirstDescendant(cf => 
+                cf.ByName(toolName).Or(cf.ByName($"{toolName} tool")));
+            
+            if (toolButton != null)
+            {
+                toolButton.Click();
+                Thread.Sleep(200);
+                Console.WriteLine($"Selected tool: {toolName}");
+            }
+            else
+            {
+                Assert.Warn($"Tool '{toolName}' not found");
+            }
+        }
+    }
+}

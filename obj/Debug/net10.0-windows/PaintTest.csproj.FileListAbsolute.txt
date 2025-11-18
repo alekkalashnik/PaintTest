@@ -1,0 +1,5 @@
+C:\Users\marin\source\repos\PaintTest\obj\Debug\net10.0-windows\PaintTest.csproj.AssemblyReference.cache
+C:\Users\marin\source\repos\PaintTest\obj\Debug\net10.0-windows\PaintTest.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\marin\source\repos\PaintTest\obj\Debug\net10.0-windows\PaintTest.AssemblyInfoInputs.cache
+C:\Users\marin\source\repos\PaintTest\obj\Debug\net10.0-windows\PaintTest.AssemblyInfo.cs
+C:\Users\marin\source\repos\PaintTest\obj\Debug\net10.0-windows\PaintTest.csproj.CoreCompileInputs.cache

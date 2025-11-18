@@ -1,0 +1,94 @@
+﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+
+namespace PaintTest.Pages
+{
+    public class SaveChangesDialogPage
+    {
+        private readonly Window _dialog;
+
+        public SaveChangesDialogPage(Window dialog)
+        {
+            _dialog = dialog ?? throw new ArgumentNullException(nameof(dialog));
+        }
+
+        public Button SaveButton => _dialog.FindFirstDescendant(cf => 
+            cf.ByControlType(ControlType.Button).And(cf.ByName("Save")))
+            ?.AsButton() ?? throw new InvalidOperationException("Save button not found");
+
+        public Button DontSaveButton => _dialog.FindFirstDescendant(cf =>
+            cf.ByControlType(ControlType.Button).And(cf.ByName("Don't save")))
+            ?.AsButton() ?? throw new InvalidOperationException("Don't Save button not found");
+
+
+        public Button CancelButton => _dialog.FindFirstDescendant(cf => 
+            cf.ByControlType(ControlType.Button).And(cf.ByName("Cancel")))
+            ?.AsButton() ?? throw new InvalidOperationException("Cancel button not found");
+
+        public string MessageText
+        {
+            get
+            {
+                var textElement = _dialog.FindFirstDescendant(cf => 
+                    cf.ByControlType(ControlType.Text));
+                return textElement?.Name ?? string.Empty;
+            }
+        }
+
+        public void ClickSave()
+        {
+            SaveButton.Click();
+        }
+
+        public void ClickDontSave()
+        {
+            DontSaveButton.Click();
+        }
+
+        public void ClickCancel()
+        {
+            CancelButton.Click();
+        }
+
+        public bool IsDisplayed => _dialog.IsAvailable;
+
+
+        public bool WaitForClose(int timeoutMs = 3000)
+        {
+            var timeout = DateTime.Now.AddMilliseconds(timeoutMs);
+            while (DateTime.Now < timeout)
+            {
+                if (!_dialog.IsAvailable)
+                {
+                    return true;
+                }
+                Thread.Sleep(100);
+            }
+            return false;
+        }
+
+        public static SaveChangesDialogPage? FindDialog(Window parentWindow, int timeoutMs = 3000)
+        {
+            var timeout = DateTime.Now.AddMilliseconds(timeoutMs);
+            while (DateTime.Now < timeout)
+            {
+                var dialog = parentWindow.ModalWindows.FirstOrDefault();
+                if (dialog != null && dialog.IsAvailable)
+                {
+                    // Verify it's the save changes dialog by checking for expected buttons
+                    var saveButton = dialog.FindFirstDescendant(cf => 
+                        cf.ByControlType(ControlType.Button).And(cf.ByName("Save")));
+                    var dontSaveButton = dialog.FindFirstDescendant(cf => 
+                        cf.ByControlType(ControlType.Button).And(cf.ByName("Don't Save")));
+                    
+                    if (saveButton != null && dontSaveButton != null)
+                    {
+                        return new SaveChangesDialogPage(dialog);
+                    }
+                }
+                Thread.Sleep(100);
+            }
+            return null;
+        }
+    }
+}

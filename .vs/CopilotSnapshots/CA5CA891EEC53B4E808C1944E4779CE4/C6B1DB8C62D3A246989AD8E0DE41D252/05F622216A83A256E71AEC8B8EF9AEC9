@@ -1,0 +1,135 @@
+﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
+using PaintTest.Core;
+
+namespace PaintTest.Pages
+{
+    public class PaintMainPage : BasePage
+    {
+        public PaintMainPage(ApplicationManager appManager) : base(appManager)
+        {
+        }
+
+        public string WindowTitle => MainWindow.Title;
+
+        public bool IsApplicationOpen()
+        {
+            return MainWindow.IsAvailable && !string.IsNullOrEmpty(MainWindow.Title);
+        }
+
+        public Button? GetFileMenuButton()
+        {
+            return MainWindow.FindFirstDescendant(cf => cf.ByControlType(ControlType.Button).And(cf.ByName("File tab")))?.AsButton();
+        }
+
+        public void ClickFileMenu()
+        {
+            var fileButton = GetFileMenuButton();
+            fileButton?.Click();
+            Thread.Sleep(300);
+        }
+
+        public void CreateNewFile()
+        {
+            // Use keyboard shortcut for reliability
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_N);
+            Thread.Sleep(500);
+        }
+
+        public void SaveFile()
+        {
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_S);
+            Thread.Sleep(500);
+        }
+
+        public void SelectTool(string toolName)
+        {
+            var tool = MainWindow.FindFirstDescendant(cf => 
+                cf.ByName(toolName).Or(cf.ByName($"{toolName} tool")));
+            tool?.Click();
+            Thread.Sleep(200);
+        }
+
+        public void DrawLine(int x1, int y1, int x2, int y2)
+        {
+            var canvas = GetCanvas();
+            if (canvas != null)
+            {
+                var bounds = canvas.BoundingRectangle;
+                var startX = bounds.Left + x1;
+                var startY = bounds.Top + y1;
+                var endX = bounds.Left + x2;
+                var endY = bounds.Top + y2;
+                
+                // Perform drag operation manually (FlaUI 5.0 approach)
+                Mouse.MoveTo(startX, startY);
+                Mouse.Down(MouseButton.Left);
+                Thread.Sleep(50);
+                Mouse.MoveTo(endX, endY);
+                Mouse.Up(MouseButton.Left);
+                Thread.Sleep(200);
+            }
+        }
+
+        public AutomationElement? GetCanvas()
+        {
+            return MainWindow.FindFirstDescendant(cf => cf.ByControlType(ControlType.Pane));
+        }
+
+        public bool IsCanvasVisible()
+        {
+            var canvas = GetCanvas();
+            return canvas != null && canvas.IsAvailable;
+        }
+
+        public void MaximizeWindow()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                if (windowPattern.Pattern.WindowVisualState.Value != WindowVisualState.Maximized)
+                {
+                    windowPattern.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
+                    Thread.Sleep(300);
+                }
+            }
+        }
+
+        public void MinimizeWindow()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                if (windowPattern.Pattern.WindowVisualState.Value != WindowVisualState.Minimized)
+                {
+                    windowPattern.Pattern.SetWindowVisualState(WindowVisualState.Minimized);
+                    Thread.Sleep(300);
+                }
+            }
+        }
+
+        public WindowVisualState GetWindowState()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                return windowPattern.Pattern.WindowVisualState.Value;
+            }
+
+            return WindowVisualState.Normal;
+        }
+
+        public void CloseApplication()
+        {
+            MainWindow.Close();
+        }
+    }
+}

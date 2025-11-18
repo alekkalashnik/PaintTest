@@ -1,0 +1,171 @@
+﻿using FlaUI.Core;
+using FlaUI.Core.AutomationElements;
+using FlaUI.UIA3;
+using PaintTest.Pages;
+using System.Diagnostics;
+
+namespace PaintTest.Core
+{
+    public class ApplicationManager : IDisposable
+    {
+        private Application? _application;
+        private UIA3Automation? _automation;
+        private const string PAINT_PATH = "mspaint.exe";
+        private const int LAUNCH_TIMEOUT_MS = 10000;
+
+        public Application Application => _application ?? throw new InvalidOperationException("Application not started");
+        public UIA3Automation Automation => _automation ?? throw new InvalidOperationException("Automation not initialized");
+        public Window MainWindow => Application.GetMainWindow(Automation, TimeSpan.FromMilliseconds(LAUNCH_TIMEOUT_MS));
+
+        public void StartApplication()
+        {
+            if (_application != null)
+            {
+                throw new InvalidOperationException("Application already started");
+            }
+
+            _automation = new UIA3Automation();
+            
+            // Start Paint application
+            _application = Application.Launch(PAINT_PATH);
+            
+            // Wait for main window to be available with a simple timeout
+            var timeout = DateTime.Now.AddMilliseconds(LAUNCH_TIMEOUT_MS);
+            while (DateTime.Now < timeout)
+            {
+                try
+                {
+                    var window = MainWindow;
+                    if (window != null && window.IsAvailable)
+                    {
+                        // Give UI a moment to fully initialize
+                        Thread.Sleep(500);
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Window not yet available
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        public void CloseApplication(SavePromptAction saveAction = SavePromptAction.DontSave)
+        {
+            if (_application == null) return;
+
+            try
+            {
+                if (_application.HasExited) return;
+            }
+            catch (InvalidOperationException)
+            {
+                // Process already disposed/exited
+                return;
+            }
+
+            // Capture the process before calling Close to avoid losing reference
+            Process process;
+            try
+            {
+                process = Process.GetProcessById(_application.ProcessId);
+            }
+            catch (ArgumentException)
+            {
+                // Process already exited
+                return;
+            }
+
+            _application.Close();
+
+            // Handle the "Do you want to save your work?" popup using the provided strategy
+            try
+            {
+                var window = MainWindow;
+                var saveDialog = SaveChangesDialogPage.FindDialog(window, 5000); // Increased timeout
+                if (saveDialog != null && saveDialog.IsDisplayed)
+                {
+                    // Add small delay to ensure dialog is fully rendered and ready
+                    Thread.Sleep(300);
+                    
+                    switch (saveAction)
+                    {
+                        case SavePromptAction.Cancel:
+                            saveDialog.ClickCancel();
+                            saveDialog.WaitForClose(2000);
+                            // User canceled close; abort waiting and return
+                            return;
+                        case SavePromptAction.DontSave:
+                            saveDialog.ClickDontSave();
+                            if (!saveDialog.WaitForClose(3000))
+                            {
+                                System.Diagnostics.Debug.WriteLine("Warning: Save dialog did not close after clicking Don't Save");
+                            }
+                            break;
+                        case SavePromptAction.Save:
+                            saveDialog.ClickSave();
+                            // Note: Save may bring up a Save As dialog; we just close the confirmation dialog here
+                            saveDialog.WaitForClose(2000);
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception for debugging
+                System.Diagnostics.Debug.WriteLine($"Error handling save dialog: {ex.Message}");
+                
+                // Try to force close if dialog handling fails
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                        Thread.Sleep(500);
+                    }
+                }
+                catch
+                {
+                    // Process already exited or can't be killed
+                }
+            }
+
+            // Wait for application to close using the captured process
+            var timeout = DateTime.Now.AddSeconds(10);
+            try
+            {
+                while (!process.HasExited && DateTime.Now < timeout)
+                {
+                    Thread.Sleep(100);
+                }
+                
+                // Force kill if still running after timeout
+                if (!process.HasExited)
+                {
+                    System.Diagnostics.Debug.WriteLine("Application failed to exit gracefully, forcing kill");
+                    process.Kill();
+                    process.WaitForExit(2000);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Process became disassociated - treat as exited
+            }
+        }
+
+        public void Dispose()
+        {
+            CloseApplication(SavePromptAction.DontSave);
+            _application?.Dispose();
+            _automation?.Dispose();
+        }
+    }
+
+    public enum SavePromptAction
+    {
+        Cancel,
+        DontSave,
+        Save
+    }
+}

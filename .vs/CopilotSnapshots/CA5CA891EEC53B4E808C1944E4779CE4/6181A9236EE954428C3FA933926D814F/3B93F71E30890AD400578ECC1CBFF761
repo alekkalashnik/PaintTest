@@ -1,0 +1,42 @@
+﻿Feature: Paint Application Launch and Basic Operations
+    As a user
+    I want to launch Microsoft Paint application
+    So that I can verify it opens correctly and is ready to use
+
+    @smoke @critical
+    Scenario: Launch Paint application successfully
+        Given I have Paint application available
+        When I launch the Paint application
+        Then Paint application should open successfully
+        And the window title should contain "Paint"
+
+    @smoke
+    Scenario: Verify Paint canvas is visible after launch
+        Given I have Paint application available
+        When I launch the Paint application
+        Then the Paint canvas should be visible
+
+    @ui
+    Scenario: Maximize Paint window
+        Given I have launched Paint application
+        When I maximize the Paint window
+        Then the Paint window should be in maximized state
+
+    @ui
+    Scenario Outline: Change window state
+        Given I have launched Paint application
+        When I change the window state to "<state>"
+        Then the Paint window should be in "<state>" state
+
+        Examples:
+        | state     |
+        | Maximized |
+        | Normal    |
+
+    @ui
+    Scenario: Minimize and restore Paint window
+        Given I have launched Paint application
+        When I change the window state to "Minimized"
+        And I wait for 1 seconds
+        And I change the window state to "Normal"
+        Then the Paint window should be in "Normal" state

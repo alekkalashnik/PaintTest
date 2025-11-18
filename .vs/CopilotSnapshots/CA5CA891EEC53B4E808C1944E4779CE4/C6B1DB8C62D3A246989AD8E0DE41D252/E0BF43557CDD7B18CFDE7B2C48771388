@@ -1,0 +1,55 @@
+﻿using BoDi;
+using NUnit.Framework;
+using PaintTest.Core;
+using TechTalk.SpecFlow;
+
+namespace PaintTest.Features.Hooks
+{
+    [Binding]
+    public class TestHooks
+    {
+        private readonly IObjectContainer _objectContainer;
+        private readonly ScenarioContext _scenarioContext;
+
+        public TestHooks(IObjectContainer objectContainer, ScenarioContext scenarioContext)
+        {
+            _objectContainer = objectContainer;
+            _scenarioContext = scenarioContext;
+        }
+
+        [BeforeScenario]
+        public void BeforeScenario()
+        {
+            var appManager = new ApplicationManager();
+            appManager.StartApplication();
+            
+            _objectContainer.RegisterInstanceAs(appManager);
+            
+            Console.WriteLine($"Scenario started: {_scenarioContext.ScenarioInfo.Title}");
+        }
+
+        [AfterScenario]
+        public void AfterScenario()
+        {
+            var appManager = _objectContainer.Resolve<ApplicationManager>();
+            appManager?.Dispose();
+            
+            Console.WriteLine($"Scenario finished: {_scenarioContext.ScenarioInfo.Title}");
+        }
+
+        [BeforeStep]
+        public void BeforeStep(ScenarioStepContext stepContext)
+        {
+            Console.WriteLine($"Starting step: {stepContext.StepInfo.Text}");
+        }
+
+        [AfterStep]
+        public void AfterStep()
+        {
+            if (_scenarioContext.TestError != null)
+            {
+                Console.WriteLine($"Step failed: {_scenarioContext.TestError.Message}");
+            }
+        }
+    }
+}

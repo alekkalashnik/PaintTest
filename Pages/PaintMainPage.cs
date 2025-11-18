@@ -1,0 +1,309 @@
+using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
+using PaintTest.Core;
+using PaintTest.Core.Exceptions;
+
+namespace PaintTest.Pages
+{
+    public class PaintMainPage : BasePage
+    {
+        public PaintMainPage(ApplicationManager appManager) : base(appManager)
+        {
+        }
+
+        public string WindowTitle => MainWindow.Title;
+
+        public bool IsApplicationOpen()
+        {
+            return MainWindow.IsAvailable && !string.IsNullOrEmpty(MainWindow.Title);
+        }
+
+
+        // ==================== FILE MENU ====================
+        
+
+        public Button? GetFileMenuButton()
+        {
+            var menuItem = MainWindow.FindFirstDescendant(cf =>
+                cf.ByName("File"))?.AsMenuItem();
+            return menuItem?.AsButton();
+        }
+
+        public void ClickFileMenu()
+        {
+            var fileButton = GetFileMenuButton();
+            fileButton?.Click();
+            Thread.Sleep(300);
+        }
+
+        public void ClickMenuItem(string menuItemName)
+        {
+            var menuItem = MainWindow.FindFirstDescendant(cf =>
+                cf.ByName(menuItemName))?.AsMenuItem();
+
+            if (menuItem != null)
+            {
+                menuItem.Click();
+                Thread.Sleep(300);
+            }
+            else
+            {
+                throw new ElementNotFoundException($"Menu item '{menuItemName}' not found", menuItemName);
+            }
+        }
+
+        public void OpenImageProperties()
+        {
+            ClickFileMenu();
+            ClickMenuItem("Image properties");
+            Thread.Sleep(500);
+        }
+
+
+        // ==================== SHORTCUTS ====================
+
+
+        public void CreateNewFileShortcut()
+        {
+            // Use keyboard shortcut for reliability
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_N);
+            Thread.Sleep(500);
+        }
+
+        public void SaveFileShortcut()
+        {
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_S);
+            Thread.Sleep(500);
+        }
+
+            public void PressShortcut(string firstKey, string secondKey) 
+        {
+            var key1 = Enum.Parse<VirtualKeyShort>(firstKey, ignoreCase: true);
+            var key2 = Enum.Parse<VirtualKeyShort>(secondKey, ignoreCase: true);
+            Keyboard.TypeSimultaneously(key1, key2);
+            Thread.Sleep(500);
+        }
+
+        public void PressKey(string firstKey)
+        {
+            var key1 = Enum.Parse<VirtualKeyShort>(firstKey, ignoreCase: true);
+            Keyboard.Type(VirtualKeyShort.DELETE);
+            Thread.Sleep(500);
+        }
+
+
+        // ==================== TOOLS ====================
+
+
+        public void SelectTool(string toolName)
+        {
+            var toolButton = MainWindow.FindFirstDescendant(cf => 
+                cf.ByName(toolName).Or(cf.ByName($"{toolName} tool")));
+            
+            if (toolButton != null)
+            {
+                toolButton.Click();
+                Thread.Sleep(200);
+            }
+            else
+            {
+                throw new ElementNotFoundException($"Tool '{toolName}' not found", toolName);
+            }
+        }
+
+        public bool IsToolAvailable(string toolName)
+        {
+            var toolButton = MainWindow.FindFirstDescendant(cf => 
+                cf.ByName(toolName).Or(cf.ByName($"{toolName} tool")));
+            
+            return toolButton != null && toolButton.IsAvailable;
+        }
+      
+
+        // ==================== DRAWING ====================
+
+
+        public void DrawLine(int x1, int y1, int x2, int y2)
+        {
+            var canvas = GetCanvas();
+            if (canvas != null)
+            {
+                var bounds = canvas.BoundingRectangle;
+                var startX = bounds.Left + x1;
+                var startY = bounds.Top + y1;
+                var endX = bounds.Left + x2;
+                var endY = bounds.Top + y2;
+
+                // Perform drag operation manually (FlaUI 5.0 approach)
+
+                Thread.Sleep(50);
+                Mouse.MoveTo(startX+2, startY+2);
+                Mouse.MoveTo(startX, startY);
+                Mouse.Down(MouseButton.Left);
+                Thread.Sleep(50);
+                Mouse.MoveTo(endX, endY);
+                Mouse.Up(MouseButton.Left);
+                Thread.Sleep(200);
+            }
+            else
+            {
+                throw new ElementNotFoundException("Canvas not found for drawing", "Canvas");
+            }
+        }
+
+
+        public void ClickbyCoordinates(int X, int Y)
+        {
+            var canvas = GetCanvas();
+            if (canvas != null)
+            {
+
+                Thread.Sleep(200);
+                Mouse.MoveTo(X, Y);
+                Thread.Sleep(200);
+                // Workaround for the click on canvas. Single click doesn't work correctly
+                Mouse.DoubleClick(MouseButton.Left);
+            }
+        }
+
+
+        // ==================== CANVAS ====================
+
+
+        public AutomationElement? GetCanvas()
+        {
+            return MainWindow.FindFirstDescendant(cf => cf.ByControlType(ControlType.Pane));
+        }
+
+        public bool IsCanvasVisible()
+        {
+            var canvas = GetCanvas();
+            return canvas != null && canvas.IsAvailable;
+        }
+
+
+        // ==================== BUTTONS ====================
+
+
+        public bool IsButtonAvailable(string buttonName)
+        {
+            var button = MainWindow.FindFirstDescendant(cf => 
+                cf.ByName(buttonName).And(cf.ByControlType(ControlType.Button)));
+            
+            return button != null && button.IsAvailable;
+        }
+
+
+        public void SelectRadioButton(string radioButtonName)
+        {
+            var radioButton = MainWindow.FindFirstDescendant(cf => 
+                cf.ByAutomationId(radioButtonName).And(cf.ByControlType(ControlType.RadioButton)))?.AsRadioButton();
+            if (radioButton != null)
+            {
+                radioButton.Click();
+                Thread.Sleep(200);
+            }
+            else
+            {
+                throw new ElementNotFoundException($"Radio button '{radioButtonName}' not found", radioButtonName);
+            }
+        }
+
+
+        // ==================== WINDOW STATE ====================
+
+
+        public void MaximizeWindow()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                if (windowPattern.Pattern.WindowVisualState.Value != WindowVisualState.Maximized)
+                {
+                    windowPattern.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
+                    Thread.Sleep(300);
+                }
+            }
+        }
+
+        public void MinimizeWindow()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                if (windowPattern.Pattern.WindowVisualState.Value != WindowVisualState.Minimized)
+                {
+                    windowPattern.Pattern.SetWindowVisualState(WindowVisualState.Minimized);
+                    Thread.Sleep(300);
+                }
+            }
+        }
+
+        public void RestoreWindow()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                if (windowPattern.Pattern.WindowVisualState.Value != WindowVisualState.Normal)
+                {
+                    windowPattern.Pattern.SetWindowVisualState(WindowVisualState.Normal);
+                    Thread.Sleep(300);
+                }
+            }
+        }
+
+        public void SetWindowState(WindowVisualState state)
+        {
+            switch (state)
+            {
+                case WindowVisualState.Maximized:
+                    MaximizeWindow();
+                    break;
+                case WindowVisualState.Minimized:
+                    MinimizeWindow();
+                    break;
+                case WindowVisualState.Normal:
+                    RestoreWindow();
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported window state: {state}");
+            }
+        }
+
+        public void SetWindowState(string stateName)
+        {
+            var state = Enum.Parse<WindowVisualState>(stateName, ignoreCase: true);
+            SetWindowState(state);
+        }
+
+        public WindowVisualState GetWindowState()
+        {
+            var window = MainWindow;
+            var windowPattern = window.Patterns.Window;
+
+            if (windowPattern.IsSupported)
+            {
+                return windowPattern.Pattern.WindowVisualState.Value;
+            }
+
+            return WindowVisualState.Normal;
+        }
+
+
+        // ==================== APPLICATION LIFECYCLE ====================
+
+
+        public void CloseApplication()
+        {
+            MainWindow.Close();
+        }
+    }
+}

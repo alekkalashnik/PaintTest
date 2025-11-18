@@ -1,0 +1,517 @@
+using FlaUI.Core.WindowsAPI;
+using NUnit.Framework;
+using PaintTest.Core;
+using PaintTest.Pages;
+using Reqnroll;
+using Reqnroll.BoDi;
+using System.Windows.Forms;
+
+namespace PaintTest.Features.StepDefinitions
+{
+    [Binding]
+    public class PaintApplicationSteps
+    {
+        private readonly IObjectContainer _objectContainer;
+        private readonly ApplicationManager _appManager;
+        private readonly PaintContext _context;
+        private BasePage? _currentPage;
+        private PaintMainPage? _paintMainPage;
+        private ImagePropertiesPage? _imagePropertiesPage;
+        private SaveAsDialogPage? _saveAsDialogPage;
+        private OpenDialogPage? _openDialogPage;
+
+        public PaintApplicationSteps(IObjectContainer objectContainer, PaintContext context)
+        {
+            _objectContainer = objectContainer;
+            _appManager = _objectContainer.Resolve<ApplicationManager>();
+            _context = context;
+        }
+
+
+        // ==================== GIVEN STEPS ====================
+
+      
+        [Given(@"Paint application is open")]
+        [Given(@"I have launched Paint application")]
+        [When(@"I launch the Paint application")]
+        public void WhenILaunchThePaintApplication()
+        {
+            _paintMainPage = new PaintMainPage(_appManager);
+            _paintMainPage.WaitForPageLoad();
+            _currentPage = _paintMainPage;
+
+            // Register in container for other step definition classes
+            _objectContainer.RegisterInstanceAs(_paintMainPage);
+
+            // Populate PaintContext with the window reference
+            _context.PaintWindow = _paintMainPage.MainWindow;
+
+            Console.WriteLine("Paint application launched successfully");
+        }
+
+        [Given(@"I have launched Paint application with default settings")]
+        public void GivenIHaveLaunchedPaintApplicationWithDefaultSettings()
+        {
+            // Launch Paint
+            WhenILaunchThePaintApplication();
+
+            // Apply default settings: maximize window
+            _paintMainPage!.MaximizeWindow();
+
+            // Set the default canvas size
+
+            _paintMainPage!.OpenImageProperties();
+            //WhenIClickOnMenuButton("File");
+            // WhenIClickOnMenuButton("Image properties");
+            WhenIClickTheButton("Default");
+            WhenIClickTheButton("OK");
+
+            Console.WriteLine("Paint launched with default settings (maximized)");
+        }
+
+
+        // ==================== THEN STEPS - ASSERTIONS ====================
+
+
+        [Then(@"Paint application should open successfully")]
+        public void ThenPaintApplicationShouldOpenSuccessfully()
+        {
+            Assert.That(_paintMainPage!.IsApplicationOpen(), Is.True,
+                "Paint application should be open");
+        }
+
+        [Then(@"Paint application should be closed successfully")]
+        public void ThenPaintApplicationShouldOBeClosedSuccessfully()
+        {
+            Assert.That(_paintMainPage!.IsApplicationOpen(), Is.False,
+                "Paint application should be closed");
+        }
+
+        [Then(@"The window title should contain ""(.*)""")]
+        public void ThenTheWindowTitleShouldContain(string expectedText)
+        {
+            Assert.That(_paintMainPage!.WindowTitle, Does.Contain(expectedText + " - Paint"),
+                $"Window title should contain '{expectedText}'");
+
+            Console.WriteLine($"Window title: {_paintMainPage.WindowTitle}");
+        }
+
+        [Then(@"The Paint canvas should be visible")]
+        public void ThenThePaintCanvasShouldBeVisible()
+        {
+            Assert.That(_paintMainPage!.IsCanvasVisible(), Is.True,
+                "Paint canvas should be visible");
+        }
+
+        [Then(@"the Paint window should be in maximized state")]
+        public void ThenThePaintWindowShouldBeInMaximizedState()
+        {
+            var currentState = _paintMainPage!.GetWindowState();
+            Assert.That(currentState, Is.EqualTo(FlaUI.Core.Definitions.WindowVisualState.Maximized),
+                "Window should be maximized");
+
+            Console.WriteLine($"Window state: {currentState}");
+        }
+
+        [Then(@"the Paint window should be in ""(.*)"" state")]
+        public void ThenThePaintWindowShouldBeInState(string expectedState)
+        {
+            var currentState = _paintMainPage!.GetWindowState();
+            var expectedVisualState = Enum.Parse<FlaUI.Core.Definitions.WindowVisualState>(expectedState, true);
+
+            Assert.That(currentState, Is.EqualTo(expectedVisualState),
+                $"Window should be in {expectedState} state");
+
+            Console.WriteLine($"Window state: {currentState}");
+        }
+
+
+        // ==================== WHEN STEPS - ACTIONS ====================
+
+
+        [When(@"I maximize the Paint window")]
+        public void WhenIMaximizeThePaintWindow()
+        {
+            _paintMainPage!.MaximizeWindow();
+        }
+
+        [Given(@"I change the window state to ""(.*)""")]
+        [When(@"I change the window state to ""(.*)""")]
+        public void WhenIChangeTheWindowStateTo(string state)
+        {
+            _paintMainPage!.SetWindowState(state);
+        }
+
+        [When(@"I draw a line from (.*),(.*) to (.*),(.*)")]
+        public void WhenIDrawALineFrom(int x1, int y1, int x2, int y2)
+        {
+            _paintMainPage!.DrawLine(x1, y1, x2, y2);
+        }
+
+        [When(@"I click on the canvas by coordinates (.*),(.*)")]
+        public void WhenIClickOnTheCanvasByCoordinates(int X, int Y)
+        {
+            _paintMainPage!.ClickbyCoordinates(X, Y);
+        }
+
+        [When(@"I click on ""(.*)"" button")]
+        public void WhenIClickOnButton(string buttonName)
+        {
+            _paintMainPage!.ClickButtonWithName(buttonName);
+        }
+
+        [When(@"I click on ""(.*)"" menu button")]
+        public void WhenIClickOnMenuButton(string menuItemName)
+        {
+            _paintMainPage!.ClickMenuItem(menuItemName);
+
+            // Navigate to ImagePropertiesPage when Image properties menu is clicked
+            if (menuItemName.Equals("Image properties", StringComparison.OrdinalIgnoreCase))
+            {
+                Thread.Sleep(500);
+                _imagePropertiesPage = new ImagePropertiesPage(_appManager);
+                _currentPage = _imagePropertiesPage;
+            }
+            // Navigate to SaveAsDialogPage when Save as is clicked
+            else if (menuItemName.Equals("Save as", StringComparison.OrdinalIgnoreCase))
+            {
+                Thread.Sleep(500);
+                _saveAsDialogPage = new SaveAsDialogPage(_appManager);
+                _currentPage = _saveAsDialogPage;
+            }
+            // Navigate to OpenDialogPage when Open is clicked
+            else if (menuItemName.Equals("Open", StringComparison.OrdinalIgnoreCase))
+            {
+                Thread.Sleep(500);
+                _openDialogPage = new OpenDialogPage(_appManager);
+                _currentPage = _openDialogPage;
+            }
+        }
+
+        [When(@"I select ""(.*)"" tool")]
+        public void WhenISelectTool(string toolName)
+        {
+            _paintMainPage!.SelectTool(toolName);
+            Thread.Sleep(200);
+            Console.WriteLine($"Selected tool: {toolName}");
+        }
+
+        [When(@"I select ""(.*)"" RadioButton")]
+        public void WhenISelectRadioButton(string radioButtonAutomationId)
+        {
+            _paintMainPage!.SelectRadioButton(radioButtonAutomationId);
+            Thread.Sleep(200);
+            Console.WriteLine($"Selected RadioButton: {radioButtonAutomationId}");
+        }
+
+
+        [When(@"I close the Paint application")]
+        public void WhenICloseThePaintApplication()
+        {
+            _paintMainPage!.CloseApplication();
+        }
+
+        [When(@"I press ""([^""]*)"" \+ ""([^""]*)"" shortcut")]
+        public void WhenIPressShortcut(string A, string B)
+        {
+            _paintMainPage!.PressShortcut(A, B);
+        }
+
+
+        [When(@"I press ""(.*)"" key")]
+        public void WhenIPressTheKey(string A)
+        {
+            _paintMainPage!.PressKey(A);
+        }
+
+        [When(@"I click the ""(.*)"" button")]
+        public void WhenIClickTheButton(string buttonName)
+        {
+            _currentPage!.ClickButtonWithName(buttonName);
+        }
+
+        [When(@"I click the ""(.*)"" button on ""(.*)"" page")]
+        public void WhenIClickTheButtonOnPage(string buttonName, string pageName)
+        {
+            NavigateToPage(pageName);
+            _currentPage!.ClickButtonWithName(buttonName);
+        }
+
+        private void NavigateToPage(string pageName)
+        {
+            switch (pageName.ToLower())
+            {
+                case "main":
+                    if (_paintMainPage == null)
+                    {
+                        throw new InvalidOperationException("Paint main page is not initialized");
+                    }
+                    _currentPage = _paintMainPage;
+                    break;
+
+                case "image properties":
+                    if (_imagePropertiesPage == null)
+                    {
+                        Thread.Sleep(500);
+                        _imagePropertiesPage = new ImagePropertiesPage(_appManager);
+                    }
+                    _currentPage = _imagePropertiesPage;
+                    break;
+
+                case "save as":
+                case "save as dialog":
+                    if (_saveAsDialogPage == null)
+                    {
+                        Thread.Sleep(500);
+                        _saveAsDialogPage = new SaveAsDialogPage(_appManager);
+                    }
+                    _currentPage = _saveAsDialogPage;
+                    break;
+
+                case "open":
+                case "open dialog":
+                    if (_openDialogPage == null)
+                    {
+                        Thread.Sleep(500);
+                        _openDialogPage = new OpenDialogPage(_appManager);
+                    }
+                    _currentPage = _openDialogPage;
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown page name: {pageName}");
+            }
+        }
+
+
+        // ==================== SAVE AS DIALOG STEPS ====================
+
+
+        [When(@"I save the file as ""(.*)"" with ""(.*)"" name")]
+        public void WhenISaveTheFileAs(string fileType, string fileName)
+        {
+            WhenIClickOnMenuButton("File");
+            WhenIClickOnMenuButton("Save as");
+
+            switch (fileType.ToUpper())
+            {
+                case "PNG":
+                    WhenIClickOnMenuButton("PNG picture");
+                    break;
+                case "JPEG":
+                    WhenIClickOnMenuButton("JPEG picture");
+                    break;
+                case "BMP":
+                    WhenIClickOnMenuButton("BMP picture");
+                    break;
+                case "GIF":
+                    WhenIClickOnMenuButton("GIF picture");
+                    break;
+                case "OTHER":
+                    WhenIClickOnMenuButton("Other format");
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown image extension: {fileType}");
+            }
+
+            Thread.Sleep(500);
+            _saveAsDialogPage = new SaveAsDialogPage(_appManager);
+            _currentPage = _saveAsDialogPage;
+            
+            _saveAsDialogPage.EnterFileName(fileName);
+            _saveAsDialogPage.ClickSaveButton();
+
+            if (_saveAsDialogPage.IsConfirmationDialogVisible())
+            {
+                IConfirmOverwrite();
+            }
+        }
+
+        [When(@"I enter the file name ""(.*)""")]
+        public void WhenIEnterTheFileName(string fileName)
+        {
+            if (_saveAsDialogPage == null && _openDialogPage == null)
+            {
+                // Try to detect which dialog is open
+                var saveAsDialog = new SaveAsDialogPage(_appManager);
+                if (saveAsDialog.IsPageLoaded())
+                {
+                    _saveAsDialogPage = saveAsDialog;
+                    _currentPage = _saveAsDialogPage;
+                }
+                else
+                {
+                    _openDialogPage = new OpenDialogPage(_appManager);
+                    _currentPage = _openDialogPage;
+                }
+            }
+
+            if (_saveAsDialogPage != null)
+            {
+                _saveAsDialogPage.EnterFileName(fileName);
+            }
+            else if (_openDialogPage != null)
+            {
+                _openDialogPage.EnterFileName(fileName);
+            }
+        }
+
+        [When(@"I select file type ""(.*)""")]
+        public void WhenISelectFileType(string fileType)
+        {
+            if (_saveAsDialogPage == null)
+            {
+                _saveAsDialogPage = new SaveAsDialogPage(_appManager);
+                _currentPage = _saveAsDialogPage;
+            }
+            _saveAsDialogPage.SelectFileType(fileType);
+        }
+
+        [When(@"I navigate to folder ""(.*)""")]
+        public void WhenINavigateToFolder(string folderPath)
+        {
+            if (_saveAsDialogPage != null)
+            {
+                _saveAsDialogPage.NavigateToFolder(folderPath);
+            }
+            else if (_openDialogPage != null)
+            {
+                _openDialogPage.NavigateToFolder(folderPath);
+            }
+            else
+            {
+                throw new InvalidOperationException("No file dialog is open");
+            }
+        }
+
+        [When(@"I click Save button")]
+        public void WhenIClickSaveButton()
+        {
+            if (_saveAsDialogPage == null)
+            {
+                _saveAsDialogPage = new SaveAsDialogPage(_appManager);
+                _currentPage = _saveAsDialogPage;
+            }
+            _saveAsDialogPage.ClickSaveButton();
+            if (_saveAsDialogPage.IsConfirmationDialogVisible())
+            {
+                IConfirmOverwrite();
+            }
+        }
+
+        [When(@"I confirm overwrite")]
+        public void IConfirmOverwrite()
+        {
+            _saveAsDialogPage?.ConfirmOverwrite();
+        }
+
+        [When(@"I cancel overwrite")]
+        public void WhenICancelOverwrite()
+        {
+            _saveAsDialogPage?.CancelOverwrite();
+        }
+
+
+        // ==================== OPEN DIALOG STEPS ====================
+
+
+        [When(@"I open the file with name ""(.*)""")]
+        public void WhenIOpenTheFile(string fileName)
+        {
+            WhenIPressShortcut("CONTROL", "KEY_O");
+
+            Thread.Sleep(500);
+            _openDialogPage = new OpenDialogPage(_appManager);
+            _currentPage = _openDialogPage;
+            
+            _openDialogPage.EnterFileName(fileName);
+            _openDialogPage.ClickOpenButton();
+        }
+
+        [When(@"I open the file ""(.*)"" from folder ""(.*)""")]
+        public void WhenIOpenTheFileFromFolder(string fileName, string folderPath)
+        {
+            WhenIClickOnMenuButton("File");
+            WhenIClickOnMenuButton("Open");
+
+            Thread.Sleep(500);
+            _openDialogPage = new OpenDialogPage(_appManager);
+            _currentPage = _openDialogPage;
+            
+            _openDialogPage.OpenFile(fileName, folderPath);
+        }
+
+        [When(@"I select file ""(.*)"" from list")]
+        public void WhenISelectFileFromList(string fileName)
+        {
+            if (_openDialogPage != null)
+            {
+                _openDialogPage.SelectFileFromList(fileName);
+            }
+            else if (_saveAsDialogPage != null)
+            {
+                _saveAsDialogPage.SelectFileFromList(fileName);
+            }
+            else
+            {
+                throw new InvalidOperationException("No file dialog is open");
+            }
+        }
+
+        [When(@"I click Open button")]
+        public void WhenIClickOpenButton()
+        {
+            if (_openDialogPage == null)
+            {
+                _openDialogPage = new OpenDialogPage(_appManager);
+                _currentPage = _openDialogPage;
+            }
+            _openDialogPage.ClickOpenButton();
+        }
+
+        [When(@"I click Cancel button in file dialog")]
+        public void WhenIClickCancelButtonInFileDialog()
+        {
+            if (_saveAsDialogPage != null)
+            {
+                _saveAsDialogPage.ClickCancelButton();
+            }
+            else if (_openDialogPage != null)
+            {
+                _openDialogPage.ClickCancelButton();
+            }
+            else
+            {
+                throw new InvalidOperationException("No file dialog is open");
+            }
+        }
+
+
+        // ==================== ASSERTIONS ====================
+
+
+        [Then(@"the file ""(.*)"" should be in the file list")]
+        public void ThenTheFileShouldBeInTheFileList(string fileName)
+        {
+            bool fileExists = false;
+            
+            if (_saveAsDialogPage != null)
+            {
+                fileExists = _saveAsDialogPage.IsFileInList(fileName);
+            }
+            else if (_openDialogPage != null)
+            {
+                fileExists = _openDialogPage.IsFileInList(fileName);
+            }
+            
+            Assert.That(fileExists, Is.True, $"File '{fileName}' should be in the file list");
+        }
+
+        [Then(@"the overwrite confirmation dialog should be visible")]
+        public void ThenTheOverwriteConfirmationDialogShouldBeVisible()
+        {
+            Assert.That(_saveAsDialogPage?.IsConfirmationDialogVisible(), Is.True, 
+                "Overwrite confirmation dialog should be visible");
+        }
+    }
+}

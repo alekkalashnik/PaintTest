@@ -1,0 +1,147 @@
+﻿using NUnit.Framework;
+using PaintTest.Core;
+using PaintTest.Pages;
+using Reqnroll;
+using Reqnroll.BoDi;
+
+namespace PaintTest.Features.StepDefinitions
+{
+    [Binding]
+    public class PaintApplicationSteps
+    {
+        private readonly IObjectContainer _objectContainer;
+        private readonly ApplicationManager _appManager;
+        private PaintMainPage? _paintMainPage;
+
+        public PaintApplicationSteps(IObjectContainer objectContainer)
+        {
+            _objectContainer = objectContainer;
+            _appManager = _objectContainer.Resolve<ApplicationManager>();
+        }
+
+        // ==================== GIVEN STEPS ====================
+
+        [Given(@"I have Paint application available")]
+        public void GivenIHavePaintApplicationAvailable()
+        {
+            // Paint is available by default on Windows - no action needed
+            Console.WriteLine("Paint is available on Windows by default");
+        }
+
+        [Given(@"I have launched Paint application")]
+        [When(@"I launch the Paint application")]
+        public void WhenILaunchThePaintApplication()
+        {
+            _paintMainPage = new PaintMainPage(_appManager);
+            _paintMainPage.WaitForPageLoad();
+            
+            // Register in container for other step definition classes
+            _objectContainer.RegisterInstanceAs(_paintMainPage);
+        }
+
+        [Given(@"I have launched Paint application with default settings")]
+        public void GivenIHaveLaunchedPaintApplicationWithDefaultSettings()
+        {
+            // Launch Paint
+            WhenILaunchThePaintApplication();
+
+            // Apply default settings: maximize window
+            _paintMainPage!.MaximizeWindow();
+
+            Console.WriteLine("Paint launched with default settings (maximized)");
+        }
+
+        // ==================== THEN STEPS - ASSERTIONS ====================
+
+        [Then(@"Paint application should open successfully")]
+        public void ThenPaintApplicationShouldOpenSuccessfully()
+        {
+            Assert.That(_paintMainPage!.IsApplicationOpen(), Is.True, 
+                "Paint application should be open");
+        }
+
+        [Then(@"the window title should contain ""(.*)""")]
+        public void ThenTheWindowTitleShouldContain(string expectedText)
+        {
+            Assert.That(_paintMainPage!.WindowTitle, Does.Contain(expectedText), 
+                $"Window title should contain '{expectedText}'");
+            
+            Console.WriteLine($"Window title: {_paintMainPage.WindowTitle}");
+        }
+
+        [Then(@"the Paint canvas should be visible")]
+        public void ThenThePaintCanvasShouldBeVisible()
+        {
+            Assert.That(_paintMainPage!.IsCanvasVisible(), Is.True, 
+                "Paint canvas should be visible");
+        }
+
+        [Then(@"the Paint window should be in maximized state")]
+        public void ThenThePaintWindowShouldBeInMaximizedState()
+        {
+            var currentState = _paintMainPage!.GetWindowState();
+            Assert.That(currentState, Is.EqualTo(FlaUI.Core.Definitions.WindowVisualState.Maximized), 
+                "Window should be maximized");
+            
+            Console.WriteLine($"Window state: {currentState}");
+        }
+
+        [Then(@"the Paint window should be in ""(.*)"" state")]
+        public void ThenThePaintWindowShouldBeInState(string expectedState)
+        {
+            var currentState = _paintMainPage!.GetWindowState();
+            var expectedVisualState = Enum.Parse<FlaUI.Core.Definitions.WindowVisualState>(expectedState, true);
+            
+            Assert.That(currentState, Is.EqualTo(expectedVisualState), 
+                $"Window should be in {expectedState} state");
+            
+            Console.WriteLine($"Window state: {currentState}");
+        }
+
+        // ==================== WHEN STEPS - ACTIONS ====================
+
+        [When(@"I maximize the Paint window")]
+        public void WhenIMaximizeThePaintWindow()
+        {
+            _paintMainPage!.MaximizeWindow();
+        }
+
+        [Given(@"I change the window state to ""(.*)""")]
+        [When(@"I change the window state to ""(.*)""")]
+        public void WhenIChangeTheWindowStateTo(string state)
+        {
+            _paintMainPage!.SetWindowState(state);
+        }
+
+        [When(@"I draw a line from (.*),(.*) to (.*),(.*)")]
+        public void WhenIDrawALineFrom(int x1, int y1, int x2, int y2)
+        {
+            _paintMainPage!.DrawLine(x1, y1, x2, y2);
+        }
+
+        [When(@"I click on ""(.*)"" button")]
+        public void WhenIClickOnButton(string buttonName)
+        {
+            _paintMainPage!.ClickButton(buttonName);
+        }
+
+        [When(@"I click on ""(.*)"" menu button")]
+        public void WhenIClickOnMenuButton(string menuItemName)
+        {
+            _paintMainPage!.ClickMenuItem(menuItemName);
+        }
+
+        [When(@"I select ""(.*)"" tool")]
+        public void WhenISelectTool(string toolName)
+        {
+            _paintMainPage!.SelectTool(toolName);
+            Console.WriteLine($"Selected tool: {toolName}");
+        }
+
+        [When(@"I close the Paint application")]
+        public void WhenICloseThePaintApplication()
+        {
+            _paintMainPage!.CloseApplication();
+        }
+    }
+}

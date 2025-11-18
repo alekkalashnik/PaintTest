@@ -1,0 +1,9 @@
+﻿@smoke
+Feature: Paint Smoke Tests
+    Quick smoke tests to verify Paint application basics
+
+    Scenario: Quick Paint launch test
+        When I launch the Paint application
+        Then Paint application should open successfully
+        When I click on "File" menu button
+        

@@ -1,0 +1,84 @@
+﻿@file-operations
+Feature: Paint File Operations
+    As a user
+    I want to save, open, and manage my Paint files
+    So that I can work with my drawings across sessions
+
+    Background:
+      
+        Given I have launched Paint application with default settings
+        
+
+    @smoke @save
+    Scenario: Save a new drawing
+        When I launch the Paint application
+        
+        Then The window title should contain "Default"
+     #   When I draw a line from 400,400 to 600,600
+     #   And I draw a line from 600,600 to 800,400
+        When I save the file
+        When I save the file as "GIF" with "Test" name
+
+        #And I click on "File" menu button
+        #And I click on "Save" menu button
+        Then the Save dialog should be displayed
+
+    @save
+    Scenario: Save drawing with specific filename
+
+        When I draw a simple line
+        And I save the file as "test_drawing.png"
+        Then the file "test_drawing.png" should be saved
+        And the window title should contain "test_drawing.png"
+
+    @save
+    Scenario Outline: Save in different formats
+        When I draw a line from 400,400 to 600,600
+        When I save the file as "<format>" with "<Testname>" name
+        When I open the file with name "<Testname>"
+
+
+        Examples:
+        | format | Testname |
+        | PNG    | test     |
+      #  | JPEG   | | png"      |
+       # | Gif    | | png      |
+       # | BMP    | | png      |
+       # | OTHER  | | png      |
+     
+        
+
+    @open
+    Scenario: Open an existing image file
+        When I open the file with name "Default"
+        When I click on "File" menu button
+        And I click on "Open" menu item
+        And I select the file "sample.png"
+        Then the image should be loaded on canvas
+
+    @new
+    Scenario: Create a new blank canvas
+        When I draw a simple line
+        And I click on "File" menu button
+        And I click on "New" menu item
+        Then a confirmation dialog may appear
+        When I confirm the action
+        Then the canvas should be blank
+
+    @new
+    Scenario: New canvas without saving changes prompts warning
+        When I draw a simple line
+        And I click on "File" menu button
+        And I click on "New" menu item
+        Then a warning dialog should appear asking to save changes
+
+    @file-operations
+    Scenario: Recent files list
+        When I click on "File" menu button
+        Then the File menu should display recent files section
+
+    @file-operations
+    Scenario: Canvas properties and resize
+        When I click on "File" menu button
+        And I click on "Properties" or "Resize" menu item
+        Then the properties dialog should be displayed

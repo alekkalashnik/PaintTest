@@ -1,0 +1,79 @@
+﻿using FlaUI.Core;
+using FlaUI.Core.AutomationElements;
+using FlaUI.UIA3;
+using PaintTest.Pages;
+using System.Diagnostics;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+
+namespace PaintTest.Core
+{
+    public class ApplicationManager : IDisposable
+    {
+        private Application? _application;
+        private UIA3Automation? _automation;
+        private const string PAINT_PATH = "mspaint.exe";
+        private const int LAUNCH_TIMEOUT_MS = 10000;
+
+        public Application Application => _application ?? throw new InvalidOperationException("Application not started");
+        public UIA3Automation Automation => _automation ?? throw new InvalidOperationException("Automation not initialized");
+        public Window MainWindow => Application.GetMainWindow(Automation, TimeSpan.FromMilliseconds(LAUNCH_TIMEOUT_MS));
+
+        public void StartApplication()
+        {
+            if (_application != null)
+            {
+                throw new InvalidOperationException("Application already started");
+            }
+
+            _automation = new UIA3Automation();
+            
+            // Start Paint application
+            _application = Application.Launch(PAINT_PATH);
+            
+            // Wait for main window to be available with a simple timeout
+            var timeout = DateTime.Now.AddMilliseconds(LAUNCH_TIMEOUT_MS);
+            while (DateTime.Now < timeout)
+            {
+                try
+                {
+                    var window = MainWindow;
+                    if (window != null && window.IsAvailable)
+                    {
+                        // Give UI a moment to fully initialize
+                        Thread.Sleep(500);
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Window not yet available
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        public void CloseApplication()
+        {
+            if (_application != null && !_application.HasExited)
+            {
+                _application.Close();
+
+             
+
+                // Wait for application to close
+                var timeout = DateTime.Now.AddSeconds(5);
+                while (!_application.HasExited && DateTime.Now < timeout)
+                {
+                    Thread.Sleep(100);
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            CloseApplication();
+            _application?.Dispose();
+            _automation?.Dispose();
+        }
+    }
+}

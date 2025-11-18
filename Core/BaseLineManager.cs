@@ -1,0 +1,46 @@
+using System.Drawing;
+using System.Drawing.Imaging;
+
+namespace PaintTest.Core
+{
+    public class BaseLineManager
+    {
+        private readonly string _baselineFolder;
+        private readonly string _actualFolder;
+
+        public BaseLineManager(string baselineFolder, string actualFolder)
+        {
+            _baselineFolder = baselineFolder;
+            _actualFolder = actualFolder;
+            Directory.CreateDirectory(_baselineFolder);
+            Directory.CreateDirectory(_actualFolder);
+        }
+
+        public void SaveActual(Bitmap image, string screenshotName)
+        {
+            var path = GetActualPath(screenshotName);
+            image.Save(path, ImageFormat.Png);
+        }
+
+        public Bitmap? LoadBaseline(string scenarioName)
+        {
+            var path = GetBaselinePath(scenarioName);
+            return File.Exists(path) ? new Bitmap(path) : null;
+        }
+
+        public void CreateBaseline(Bitmap image, string scenarioName)
+        {
+            var path = GetBaselinePath(scenarioName);
+            image.Save(path, ImageFormat.Png);
+        }
+
+        private string GetBaselinePath(string scenarioName) => 
+            Path.Combine(_baselineFolder, $"{SanitizeFileName(scenarioName)}_baseline.png");
+
+        private string GetActualPath(string scenarioName) => 
+            Path.Combine(_actualFolder, $"{SanitizeFileName(scenarioName)}_actual.png");
+
+        private string SanitizeFileName(string name) => 
+            name.Replace(" ", "_").Replace(",", "").Replace("\"", "");
+    }
+}

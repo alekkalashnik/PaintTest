@@ -1,0 +1,22 @@
+############################
+# Build Folders
+############################
+bin/
+!bin/Debug/net8.0-windows/Reports/
+!bin/Debug/net8.0-windows/Reports/**
+obj/
+out/
+artifacts/
+
+.vs/
+.vscode/
+
+*.coverage
+*.coveragexml
+*.trx
+*.feature.cs
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp

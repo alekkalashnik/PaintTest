@@ -37,6 +37,7 @@ This project provides comprehensive UI automation testing for Microsoft Paint (m
 - ? **Multiple Test Categories**: Smoke, UI, Drawing, Tools, File Operations, Edit, View/Zoom
 - ? **Comprehensive Coverage**: Tests for all major Paint features
 - ? **CI/CD Ready**: Designed for continuous integration pipelines
+- ? **HTML reporting**: Available by this path PaintTest\bin\Debug\net8.0-windows\Reports
 
 ##  Prerequisites
 
@@ -139,9 +140,7 @@ PaintTest/
 ?     PaintViewZoom.feature
 ?
   PageObjectModelGuide.md           # POM architecture guide
-  RefactoringLog.md                 # Refactoring history
   TestScenarios.md                  # Test scenarios overview
-  TROUBLESHOOTING.md                # Common issues and solutions
   README.md                         # This file
 ```
 

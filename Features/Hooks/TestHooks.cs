@@ -3,6 +3,7 @@ using PaintTest.Core;
 using Reqnroll;
 using AventStack.ExtentReports;
 using AventStack.ExtentReports.Gherkin.Model;
+using System.Diagnostics;
 
 namespace PaintTest.Features.Hooks
 {
@@ -53,7 +54,7 @@ namespace PaintTest.Features.Hooks
         public void AfterScenario()
         {
             var appManager = _objectContainer.Resolve<ApplicationManager>();
-            
+
             // Capture screenshot on failure
             if (_scenarioContext.TestError != null)
             {
@@ -72,9 +73,64 @@ namespace PaintTest.Features.Hooks
             {
                 _scenario?.Pass("Scenario passed successfully");
             }
-            
-            appManager?.Dispose();
-            
+
+            // Try to close and dispose the application manager robustly.
+            try
+            {
+                if (appManager != null)
+                {
+                    try
+                    {
+                        // Attempt graceful close first (will handle save dialog)
+                        appManager.CloseApplication(SavePromptAction.DontSave);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Warning: CloseApplication threw: {ex.Message}");
+                    }
+
+                    try
+                    {
+                        // Ensure resources are released
+                        appManager.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Warning: Dispose threw: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Unexpected error while shutting down ApplicationManager: {ex.Message}");
+            }
+
+            // As a final fallback, kill any leftover mspaint processes to avoid leaving the UI open
+            try
+            {
+                var procs = Process.GetProcessesByName("mspaint");
+                foreach (var p in procs)
+                {
+                    try
+                    {
+                        if (!p.HasExited)
+                        {
+                            Debug.WriteLine($"Forcing kill of lingering process Id={p.Id}");
+                            p.Kill();
+                            p.WaitForExit(2000);
+                        }
+                    }
+                    catch
+                    {
+                        // ignore individual process kill failures
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to enumerate/kill mspaint processes: {ex.Message}");
+            }
+
             Console.WriteLine($"Scenario finished: {_scenarioContext.ScenarioInfo.Title}");
         }
 

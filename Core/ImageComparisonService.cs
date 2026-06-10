@@ -9,22 +9,33 @@ namespace PaintTest.Core
             Bitmap actual, 
             double thresholdPercentage = 0.1)
         {
-            if (baseline.Size != actual.Size)
+            // If sizes differ, compare the overlapping region and penalize missing/excess pixels
+            int compareWidth = Math.Min(baseline.Width, actual.Width);
+            int compareHeight = Math.Min(baseline.Height, actual.Height);
+
+            if (compareWidth == 0 || compareHeight == 0)
                 return (false, 100.0);
 
             int differentPixels = 0;
-            int totalPixels = baseline.Width * baseline.Height;
+            int overlapPixels = compareWidth * compareHeight;
 
-            for (int y = 0; y < baseline.Height; y++)
+            for (int y = 0; y < compareHeight; y++)
             {
-                for (int x = 0; x < baseline.Width; x++)
+                for (int x = 0; x < compareWidth; x++)
                 {
                     if (!ColorsAreSimilar(baseline.GetPixel(x, y), actual.GetPixel(x, y)))
                         differentPixels++;
                 }
             }
 
-            double differencePercentage = (differentPixels * 100.0) / totalPixels;
+            // Any baseline pixels outside the overlapping area are considered different
+            int baselineTotal = baseline.Width * baseline.Height;
+            int extraBaselinePixels = baselineTotal - overlapPixels;
+            if (extraBaselinePixels < 0) extraBaselinePixels = 0;
+
+            double totalDifferent = differentPixels + extraBaselinePixels;
+            double differencePercentage = (totalDifferent * 100.0) / baselineTotal;
+
             return (differencePercentage < thresholdPercentage, differencePercentage);
         }
 

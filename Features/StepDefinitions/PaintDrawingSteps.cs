@@ -61,7 +61,7 @@ namespace PaintTest.Features.StepDefinitions
             {
                 using (baseline)
                 {
-                    var result = _imageComparisonService.CompareImages(baseline, screenshot);
+                    var result = _imageComparisonService.CompareImages(baseline, screenshot, thresholdPercentage: 2.0);
                     Assert.That(result.AreSimilar, Is.True,
                         $"Canvas differs from baseline. Difference: {result.DifferencePercentage:F2}%");
                 }

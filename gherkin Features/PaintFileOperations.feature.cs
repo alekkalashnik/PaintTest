@@ -153,7 +153,7 @@ namespace PaintTest.GherkinFeatures
         await testRunner.WhenAsync("I launch the Paint application", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 15
-        await testRunner.ThenAsync("The window title should contain \"Default\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+        await testRunner.ThenAsync("The window title should contain \"Untitled\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 16
         await testRunner.WhenAsync("I draw a line from 400,400 to 600,600", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -218,6 +218,12 @@ namespace PaintTest.GherkinFeatures
 #line 25
         await testRunner.WhenAsync(string.Format("I open the file with name \"{0}\"", testname), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
+#line 26
+        await testRunner.ThenAsync("the file should have been opened successfully", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 27
+        await testRunner.AndAsync(string.Format("the window title should contain the file name \"{0}\"", testname), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
             }
             await this.ScenarioCleanupAsync();
         }
@@ -236,7 +242,7 @@ namespace PaintTest.GherkinFeatures
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Open an existing image file", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 36
+#line 38
     this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -249,10 +255,10 @@ namespace PaintTest.GherkinFeatures
 #line 7
     await this.FeatureBackgroundAsync();
 #line hidden
-#line 37
+#line 39
         await testRunner.WhenAsync("I open the file with name \"Default Image\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 38
+#line 40
         await testRunner.ThenAsync("The canvas should contain \"Default Image\" with drawn content", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -273,7 +279,7 @@ namespace PaintTest.GherkinFeatures
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("New canvas without saving changes prompts warning", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 41
+#line 43
     this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -286,16 +292,16 @@ namespace PaintTest.GherkinFeatures
 #line 7
     await this.FeatureBackgroundAsync();
 #line hidden
-#line 42
+#line 44
         await testRunner.WhenAsync("I draw a line from 400,400 to 600,600", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 43
+#line 45
         await testRunner.AndAsync("I click on \"File\" menu button", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 44
+#line 46
         await testRunner.AndAsync("I click on \"New\" menu button", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 45
+#line 47
         await testRunner.ThenAsync("a warning dialog should appear asking to save changes", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -314,7 +320,7 @@ namespace PaintTest.GherkinFeatures
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Recent files list", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 48
+#line 50
     this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -327,13 +333,13 @@ namespace PaintTest.GherkinFeatures
 #line 7
     await this.FeatureBackgroundAsync();
 #line hidden
-#line 49
+#line 51
         await testRunner.WhenAsync("I click on \"File\" menu button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 50
+#line 52
         await testRunner.AndAsync("I click on \"Recent\" menu button", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 51
+#line 53
         await testRunner.ThenAsync("the Recent menu should display recent files section", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -352,7 +358,7 @@ namespace PaintTest.GherkinFeatures
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Canvas properties and resize", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 54
+#line 56
     this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -365,13 +371,13 @@ namespace PaintTest.GherkinFeatures
 #line 7
     await this.FeatureBackgroundAsync();
 #line hidden
-#line 55
+#line 57
         await testRunner.WhenAsync("I click on \"File\" menu button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 56
+#line 58
         await testRunner.AndAsync("I click on \"Properties\" or \"Resize\" menu item", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 57
+#line 59
         await testRunner.ThenAsync("the properties dialog should be displayed", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

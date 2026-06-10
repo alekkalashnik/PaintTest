@@ -19,6 +19,7 @@ namespace PaintTest.Features.StepDefinitions
         private ImagePropertiesPage? _imagePropertiesPage;
         private SaveAsDialogPage? _saveAsDialogPage;
         private OpenDialogPage? _openDialogPage;
+        private string? _lastSavedFileExtension;
 
         public PaintApplicationSteps(IObjectContainer objectContainer, PaintContext context)
         {
@@ -45,6 +46,16 @@ namespace PaintTest.Features.StepDefinitions
 
             // Populate PaintContext with the window reference
             _context.PaintWindow = _paintMainPage.MainWindow;
+
+            // Ensure a consistent window state for visual baselines
+            try
+            {
+                _paintMainPage.MaximizeWindow();
+            }
+            catch
+            {
+                // Ignore if maximize is not supported in this environment
+            }
 
             Console.WriteLine("Paint application launched successfully");
         }
@@ -293,6 +304,16 @@ namespace PaintTest.Features.StepDefinitions
             WhenIClickOnMenuButton("File");
             WhenIClickOnMenuButton("Save as");
 
+            // Track the file extension for later use when opening
+            _lastSavedFileExtension = fileType.ToUpper() switch
+            {
+                "PNG" => ".png",
+                "JPEG" => ".jpg",
+                "BMP" => ".bmp",
+                "GIF" => ".gif",
+                _ => throw new ArgumentException($"Unknown image extension: {fileType}")
+            };
+
             switch (fileType.ToUpper())
             {
                 case "PNG":
@@ -309,6 +330,7 @@ namespace PaintTest.Features.StepDefinitions
                     break;
                 case "OTHER":
                     WhenIClickOnMenuButton("Other format");
+                    _lastSavedFileExtension = null;
                     break;
                 default:
                     throw new ArgumentException($"Unknown image extension: {fileType}");
@@ -325,6 +347,8 @@ namespace PaintTest.Features.StepDefinitions
             {
                 IConfirmOverwrite();
             }
+
+            Console.WriteLine($"[SaveAs] Saved file: {fileName} with extension: {_lastSavedFileExtension}");
         }
 
         [When(@"I enter the file name ""(.*)""")]
@@ -423,8 +447,16 @@ namespace PaintTest.Features.StepDefinitions
             Thread.Sleep(500);
             _openDialogPage = new OpenDialogPage(_appManager);
             _currentPage = _openDialogPage;
-            
-            _openDialogPage.EnterFileName(fileName);
+
+            // Add extension to filename if needed
+            string fileNameToOpen = fileName;
+            if (!fileName.Contains('.') && !string.IsNullOrEmpty(_lastSavedFileExtension))
+            {
+                fileNameToOpen = fileName + _lastSavedFileExtension;
+                Console.WriteLine($"[OpenFile] Added extension: {fileNameToOpen}");
+            }
+
+            _openDialogPage.EnterFileName(fileNameToOpen);
             _openDialogPage.ClickOpenButton();
         }
 
@@ -512,6 +544,33 @@ namespace PaintTest.Features.StepDefinitions
         {
             Assert.That(_saveAsDialogPage?.IsConfirmationDialogVisible(), Is.True, 
                 "Overwrite confirmation dialog should be visible");
+        }
+
+        [Then(@"the file should have been opened successfully")]
+        public void ThenTheFileShouldHaveBeenOpenedSuccessfully()
+        {
+            // Verify the canvas is visible, which indicates a file was successfully opened
+            Assert.That(_paintMainPage!.IsCanvasVisible(), Is.True,
+                "Paint canvas should be visible after opening a file. The file may not have been opened successfully.");
+
+            Console.WriteLine("[FileOpen] Canvas is visible");
+        }
+
+        [Then(@"the window title should contain the file name ""(.*)""")]
+        public void ThenTheWindowTitleShouldContainTheFileName(string expectedFileName)
+        {
+            string windowTitle = _paintMainPage!.WindowTitle;
+
+            // The title should be in the format: "fileName - Paint" (without extension)
+            string expectedTitle = $"{expectedFileName} - Paint";
+
+            bool titleMatches = windowTitle.Equals(expectedTitle, StringComparison.OrdinalIgnoreCase);
+
+            Assert.That(titleMatches, Is.True,
+                $"Window title should be '{expectedTitle}' but was '{windowTitle}'. " +
+                $"The file may not have been opened or loaded correctly.");
+
+            Console.WriteLine($"[WindowTitle] Window title correctly shows: {windowTitle}");
         }
     }
 }

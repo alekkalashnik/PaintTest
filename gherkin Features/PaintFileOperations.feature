@@ -12,7 +12,7 @@ Feature: Paint File Operations
     @critical @smoke @save
     Scenario: Save a new drawing
         When I launch the Paint application
-        Then The window title should contain "Default"
+        Then The window title should contain "Untitled"
         When I draw a line from 400,400 to 600,600
         And I draw a line from 600,600 to 800,400
         When I save the file as "GIF" with "Test" name
@@ -23,6 +23,8 @@ Feature: Paint File Operations
         When I draw a line from 400,400 to 600,600
         When I save the file as "<format>" with "<Testname>" name
         When I open the file with name "<Testname>"
+        Then the file should have been opened successfully
+        And the window title should contain the file name "<Testname>"
 
         Examples:
         | format | Testname |   

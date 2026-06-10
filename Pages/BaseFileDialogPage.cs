@@ -32,11 +32,9 @@ namespace PaintTest.Pages
                 cf.ByAutomationId("1148").And(cf.ByControlType(ControlType.Edit)))?.AsTextBox()
                 ?? Dialog.FindFirstDescendant(cf =>
                 cf.ByAutomationId("1001").And(cf.ByControlType(ControlType.Edit)))?.AsTextBox();
-            
+
             if (textBox != null)
             {
-                // Wait for textbox to be enabled with retry logic
-                int maxRetries = 10;
                 int retryCount = 0;
                 bool success = false;
 
@@ -44,31 +42,73 @@ namespace PaintTest.Pages
                 {
                     try
                     {
-                        // Check if textbox is enabled
                         if (textBox.IsEnabled && !textBox.IsReadOnly)
                         {
-                            textBox.Text = fileName;
-                            success = true;
-                            Thread.Sleep(200);
+                            // Focus the textbox
+                            try { textBox.Focus(); } catch { }
+                            Thread.Sleep(150);
+
+                            // Clear any existing text using keyboard
+                            try
+                            {
+                                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+                                Thread.Sleep(100);
+                                Keyboard.Press(VirtualKeyShort.DELETE);
+                                Thread.Sleep(100);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[EnterFileName] Warning: Could not clear text: {ex.Message}");
+                            }
+
+                            // Type the filename character by character using keyboard
+                            Console.WriteLine($"[EnterFileName] Entering filename via keyboard: {fileName}");
+                            Keyboard.Type(fileName);
+                            Thread.Sleep(300);
+
+                            // Validate the text was entered
+                            string currentText = textBox.Text ?? string.Empty;
+                            Console.WriteLine($"[EnterFileName] TextBox now contains: '{currentText}'");
+
+                            if (currentText == fileName)
+                            {
+                                success = true;
+                                Console.WriteLine($"[EnterFileName] SUCCESS: Filename '{fileName}' correctly entered");
+                            }
+                            else if (currentText.Contains(fileName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Sometimes there might be extra characters, but the name is there
+                                success = true;
+                                Console.WriteLine($"[EnterFileName] SUCCESS: Filename found in textbox (contains '{fileName}')");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[EnterFileName] FAILED: Expected '{fileName}' but got '{currentText}'. Attempt {retryCount + 1}/{maxRetries}");
+                                Thread.Sleep(200);
+                                retryCount++;
+                            }
                         }
                         else
                         {
-                            Thread.Sleep(200); // Wait before retry
+                            Console.WriteLine($"[EnterFileName] TextBox not ready (Enabled: {textBox.IsEnabled}, ReadOnly: {textBox.IsReadOnly}). Attempt {retryCount + 1}/{maxRetries}");
+                            Thread.Sleep(300);
                             retryCount++;
                         }
                     }
-                    catch (FlaUI.Core.Exceptions.ElementNotEnabledException)
+                    catch (Exception ex)
                     {
-                        // Textbox not ready yet, wait and retry
-                        Thread.Sleep(200);
+                        Console.WriteLine($"[EnterFileName] Exception: {ex.Message}. Attempt {retryCount + 1}/{maxRetries}");
+                        Thread.Sleep(300);
                         retryCount++;
                     }
                 }
 
                 if (!success)
                 {
+                    string currentValue = textBox.Text ?? string.Empty;
                     throw new InvalidOperationException(
-                        $"File name textbox was not enabled after {maxRetries} retries. IsEnabled: {textBox.IsEnabled}, IsReadOnly: {textBox.IsReadOnly}");
+                        $"Failed to enter filename '{fileName}' after {maxRetries} attempts. " +
+                        $"TextBox currently contains: '{currentValue}'");
                 }
             }
             else

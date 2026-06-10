@@ -59,8 +59,10 @@ namespace PaintTest.Pages
             {
                 NavigateToFolder(folderPath);
             }
-            EnterFileName(fileName);
+            // Select the type first; in some OS/file dialogs selecting type can reset the filename field
             SelectFileType(fileType);
+            Thread.Sleep(150);
+            EnterFileName(fileName);
             ClickSaveButton();
         }
 

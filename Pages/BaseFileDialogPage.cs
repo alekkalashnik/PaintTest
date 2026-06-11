@@ -35,6 +35,7 @@ namespace PaintTest.Pages
 
             if (textBox != null)
             {
+                int maxRetries = 10;
                 int retryCount = 0;
                 bool success = false;
 

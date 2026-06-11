@@ -1,3 +1,4 @@
+using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using NUnit.Framework;
 using PaintTest.Core;
@@ -341,6 +342,7 @@ namespace PaintTest.Features.StepDefinitions
             _currentPage = _saveAsDialogPage;
             
             _saveAsDialogPage.EnterFileName(fileName);
+            Keyboard.Press(VirtualKeyShort.TAB);
             _saveAsDialogPage.ClickSaveButton();
 
             if (_saveAsDialogPage.IsConfirmationDialogVisible())
